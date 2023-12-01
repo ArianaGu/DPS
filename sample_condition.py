@@ -71,7 +71,7 @@ def main():
     # Working directory
     out_path = os.path.join(args.save_dir, measure_config['operator']['name'])
     os.makedirs(out_path, exist_ok=True)
-    for img_dir in ['input', 'recon', 'progress', 'label']:
+    for img_dir in ['input', 'recon', 'progress', 'label', 'trials']:
         os.makedirs(os.path.join(out_path, img_dir), exist_ok=True)
 
     # Prepare dataloader
@@ -108,14 +108,19 @@ def main():
             # Forward measurement model (Ax + n)
             y = operator.forward(ref_img)
             y_n = noiser(y)
-         
-        # Sampling
-        x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
-        sample = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path)
+        
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y))
+        
+        # Sample for multiple trials
+        trials = 100
+        for i in range(trials):
+            x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
+            sample = sample_fn(x_start=x_start, measurement=y, record=False, save_root=out_path)
+            plt.imsave(os.path.join(out_path, 'trials', str(i).zfill(5) + '.png'), clear_color(sample))
 
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
+        break
 
 if __name__ == '__main__':
     main()

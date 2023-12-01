@@ -3,3 +3,4 @@ results/
 models/
 bkse/
 motion_blur/
+*.pyc
