@@ -10,6 +10,8 @@ from motionblur.motionblur import Kernel
 from util.resizer import Resizer
 from util.img_utils import Blurkernel, fft2_m
 
+import numpy as np
+from PIL import Image
 
 # =================
 # Operation classes
@@ -150,6 +152,34 @@ class InpaintingOperator(LinearOperator):
     
     def ortho_project(self, data, **kwargs):
         return data - self.forward(data, **kwargs)
+
+
+@register_operator(name='diffuser_cam')
+class DiffuserCamOperator(LinearOperator):
+    def __init__(self, psf_path, device):
+        self.device = device
+        psf = Image.open(psf_path)
+        psf = psf.resize((127, 127), Image.BICUBIC)
+        psf = np.array(psf, dtype=np.float32)
+        bg = np.mean(psf[5:15,5:15])
+        psf -= bg
+        psf = np.clip(psf, 0, None)
+        psf /= np.sum(psf)
+        psf *= 3
+        psf = torch.tensor(psf)
+        psf = psf.permute(2, 0, 1)
+        self.psf = psf.view(3, 1, psf.shape[1], psf.shape[2]).to(device)
+    
+    def forward(self, data, **kwargs):
+        # Flip the PSF horizontally and vertically
+        flipped_psf = torch.flip(self.psf, [2, 3])
+        # Perform the convolution
+        result = F.conv2d(data, flipped_psf, padding=(self.psf.size(2) // 2, self.psf.size(3) // 2), groups=data.size(1))
+        return result
+    
+    def transpose(self, data, **kwargs):
+        result = F.conv2d(data, self.psf, padding=(self.psf.size(2) // 2, self.psf.size(3) // 2), groups=data.size(1))
+        return result
 
 
 class NonLinearOperator(ABC):

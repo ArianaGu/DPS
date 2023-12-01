@@ -51,9 +51,9 @@ def clear_color(x):
 
 def normalize_np(img):
     """ Normalize img in arbitrary range to [0, 1] """
-    img -= np.min(img)
-    img /= np.max(img)
-    return img
+    img_norm = img - np.min(img)
+    img_norm /= np.max(img_norm)
+    return img_norm
 
 
 def prepare_im(load_dir, image_size, device):
