@@ -108,16 +108,26 @@ def main():
             # Forward measurement model (Ax + n)
             y = operator.forward(ref_img)
             y_n = noiser(y)
-        
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y))
-        
-        # Sample for multiple trials
-        trials = 100
-        for i in range(trials):
-            x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
-            sample = sample_fn(x_start=x_start, measurement=y, record=False, save_root=out_path)
-            plt.imsave(os.path.join(out_path, 'trials', str(i).zfill(5) + '.png'), clear_color(sample))
 
+                
+        if cond_config['deconv_init']:
+            # Initialize with direct deconv
+            recon = torch.rand_like(ref_img, device=device)
+            recon.requires_grad = True
+            optimizer = torch.optim.Adam([recon], lr=0.04)
+            losses = []
+            for i in range(2000):
+                optimizer.zero_grad()
+                loss = torch.nn.functional.mse_loss(operator.forward(recon), y)
+                loss.backward()
+                optimizer.step()
+                losses.append(loss.item())
+            x_start = recon.detach().clone().requires_grad_()
+        else:
+            x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
+            
+        sample = sample_fn(x_start=x_start, measurement=y, record=False, save_root=out_path)
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
         break

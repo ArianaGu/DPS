@@ -182,6 +182,19 @@ class DiffuserCamOperator(LinearOperator):
         return result
 
 
+@register_operator(name='shuffle')
+class ShuffleOperator(LinearOperator):
+    def __init__(self, shifts, device):
+        self.shifts = shifts
+        self.device = device
+    
+    def forward(self, data, **kwargs):
+        return torch.roll(data, shifts=(self.shifts[1], self.shifts[0]), dims=(2, 3))
+
+    def transpose(self, data, **kwargs):
+        return data
+
+
 class NonLinearOperator(ABC):
     @abstractmethod
     def forward(self, data, **kwargs):

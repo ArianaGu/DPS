@@ -1,7 +1,8 @@
 conditioning:
   method: ps
   params:
-    scale: 0.3
+    scale: 1.0
+  deconv_init: False
 
 data:
   name: ffhq

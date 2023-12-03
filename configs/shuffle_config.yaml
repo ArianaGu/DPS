@@ -1,7 +1,7 @@
 conditioning:
   method: ps
   params:
-    scale: 1.0
+    scale: 0.3
   deconv_init: False
 
 data:
@@ -10,9 +10,9 @@ data:
 
 measurement:
   operator:
-    name: phase_retrieval
-    oversample: 2.0
-
+    name: shuffle
+    shifts: [100,50]
+  
   noise: 
     name: gaussian
     sigma: 0.05
