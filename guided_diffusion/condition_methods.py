@@ -57,7 +57,7 @@ class Identity(ConditioningMethod):
 class Projection(ConditioningMethod):
     def conditioning(self, x_t, noisy_measurement, **kwargs):
         x_t = self.project(data=x_t, noisy_measurement=noisy_measurement)
-        return x_t
+        return x_t, torch.tensor(0.0)
 
 
 @register_conditioning_method(name='mcg')

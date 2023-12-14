@@ -122,7 +122,10 @@ def main():
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.item())
-            x_start = recon.detach().clone().requires_grad_()
+            with torch.no_grad():
+                x_start = recon.detach().clone()*0.1
+                x_start += torch.randn(ref_img.shape, device=device)
+            x_start = x_start.requires_grad_()
         else:
             x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
             
