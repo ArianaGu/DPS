@@ -1,0 +1,18 @@
+conditioning:
+  method: ps
+  params:
+    scale: 1.0
+  deconv_init: False
+
+data:
+  name: ffhq
+  root: ./data/samples/
+
+measurement:
+  operator:
+    name: diffuser_cam_inv
+    psf_path: ./data/psf_sample.jpg
+  
+  noise: 
+    name: gaussian
+    sigma: 0.05

@@ -180,6 +180,43 @@ class DiffuserCamOperator(LinearOperator):
     def transpose(self, data, **kwargs):
         result = F.conv2d(data, self.psf, padding=(self.psf.size(2) // 2, self.psf.size(3) // 2), groups=data.size(1))
         return result
+    
+@register_operator(name='diffuser_cam_inv')
+class DiffuserCamOperator(LinearOperator):
+    def __init__(self, psf_path, device):
+        self.device = device
+        psf = Image.open(psf_path)
+        psf = psf.resize((127, 127), Image.BICUBIC)
+        psf = np.array(psf, dtype=np.float32)
+        bg = np.mean(psf[5:15,5:15])
+        psf -= bg
+        psf = np.clip(psf, 0, None)
+        psf /= np.sum(psf)
+        psf *= 3
+        psf = torch.tensor(psf)
+        psf = psf.permute(2, 0, 1)
+        self.psf = psf.view(3, 1, psf.shape[1], psf.shape[2]).to(device)
+
+    def forward(self, data, **kwargs):
+        def pad(x, padded_shape):
+            M, N = x.shape[2:]
+            pad0 = (padded_shape[0]-M)//2
+            pad1 = (padded_shape[1]-N)//2
+            pad_size = (pad1, padded_shape[1]-N-pad1, pad0, padded_shape[0]-M-pad0)
+            padding = torch.nn.ZeroPad2d(pad_size)
+            x_pad = padding(x)
+            return x_pad
+        psf_padded = pad(self.psf, [data.shape[-2], data.shape[-1]])
+        x_f = torch.fft.fft2(data, dim=(-2, -1), norm="ortho")
+        psf_f = torch.fft.fft2(psf_padded, dim=(-2, -1))   
+        y_f = psf_f * x_f
+        y_conv = torch.fft.ifft2(y_f, dim=(-2, -1))
+        y_conv = torch.abs(torch.fft.ifftshift(y_conv, dim=(-2, -1)))
+        return y_conv
+    
+    def transpose(self, data, **kwargs):
+        result = F.conv2d(data, self.psf, padding=(self.psf.size(2) // 2, self.psf.size(3) // 2), groups=data.size(1))
+        return result
 
 
 @register_operator(name='shuffle')

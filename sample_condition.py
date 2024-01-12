@@ -109,7 +109,7 @@ def main():
             y = operator.forward(ref_img)
             y_n = noiser(y)
 
-                
+        print(y_n.shape)
         if cond_config['deconv_init']:
             # Initialize with direct deconv
             recon = torch.rand_like(ref_img, device=device)
